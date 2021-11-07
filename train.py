@@ -42,7 +42,7 @@ parser.add_argument('--dataset_dir', default='Data', type=str,
                     help='The location of the dataset to be explored')
 parser.add_argument('--trials', default=5, type=int,
                     help='Number of times to run the complete experiment')
-parser.add_argument('--baseline', default=False, type=Bool,
+parser.add_argument('--baseline', '-b', action='store_true',
                     help='To run a baseline experiment without using Mixup')
 args = parser.parse_args()
 
@@ -122,13 +122,16 @@ def train(epoch):
         if use_cuda:
             inputs, targets = inputs.cuda(), targets.cuda()
 
+        print(args.baseline)
         if not args.baseline:
+            print("Not Baseline code 1")
             inputs, targets_a, targets_b, lam = mixup_data(inputs, targets,
                                                        args.alpha, use_cuda)
         # Make Prediction
         outputs = net(inputs)
 
         if args.baseline:
+            print("Baseline code")
             loss = criterion(outputs, targets)
             train_loss += loss.data.item()
             _, predicted = torch.max(outputs.data, 1)
@@ -136,6 +139,7 @@ def train(epoch):
             correct += predicted.eq(targets.data).cpu().sum()
 
         else:
+            print("Not Baseline code 2")
             loss = mixup_criterion(criterion, outputs, targets_a, targets_b, lam)
             train_loss += loss.data.item()
             _, predicted = torch.max(outputs.data, 1)
