@@ -11,6 +11,7 @@ import math
 import torch
 import torch.nn as nn
 import torch.nn.init as init
+from torch.autograd import Variable
 
 
 def get_mean_and_std(dataset):
@@ -123,3 +124,55 @@ def format_time(seconds):
     if f == '':
         f = '0ms'
     return f
+
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import classification_report
+
+def get_pred_as_list(test_preds):
+
+    result = []
+    for i in range(len(test_preds)):
+        result.append(int(test_preds[i].item()))
+
+    return result
+
+def make_prediction(net, class_names, loader, name_to_save):
+
+    test_loss = 0
+    correct = 0
+    total = 0
+    acc = 0
+    all_preds = torch.tensor([]).cuda()
+    ground_truths = torch.tensor([]).cuda()
+    net.eval()
+
+    for batch_idx, (inputs, targets) in enumerate(loader):
+        if torch.cuda.is_available():
+            inputs, targets = inputs.cuda(), targets.cuda()
+            # inputs, targets = Variable(inputs, volatile=True), Variable(targets)
+            outputs = net(inputs)
+
+            _, predicted = torch.max(outputs.data, 1)
+
+            total += targets.size(0)
+            correct += predicted.eq(targets.data).cpu().sum()
+
+            ground_truths = torch.cat(
+                  (ground_truths, targets)
+                  ,dim=0
+              )
+
+            all_preds = torch.cat(
+                  (all_preds, predicted)
+                  ,dim=0
+              )
+
+            acc = 100.*correct/total
+
+    print("Accuracy: ", acc.data.item())
+
+    targets = get_pred_as_list(ground_truths)
+    preds = get_pred_as_list(all_preds)
+    cm = confusion_matrix(targets, preds)
+    print(classification_report(targets, preds, target_names=class_names))
