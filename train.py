@@ -230,6 +230,14 @@ for trial in range(args.trials):
         print('==> Building model..')
         net = models.__dict__[args.model]()
 
+        ## Get the class names
+        class_names = trainset.classes
+
+        ### Update the number of classes to predict
+        num_ftrs = net.linear.in_features
+        # Alternatively, it can be generalized to nn.Linear(num_ftrs, len(class_names)).
+        net.linear = nn.Linear(num_ftrs, len(class_names))
+
     results = "results_" + str(trial)
     if not os.path.isdir(results):
         os.mkdir(results)
