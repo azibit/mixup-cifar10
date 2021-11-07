@@ -11,7 +11,10 @@ import math
 import torch
 import torch.nn as nn
 import torch.nn.init as init
-from torch.autograd import Variable
+
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import classification_report
 
 
 def get_mean_and_std(dataset):
@@ -125,10 +128,6 @@ def format_time(seconds):
         f = '0ms'
     return f
 
-from sklearn.metrics import confusion_matrix
-from sklearn.metrics import accuracy_score
-from sklearn.metrics import classification_report
-
 def get_pred_as_list(test_preds):
 
     result = []
@@ -150,7 +149,6 @@ def make_prediction(net, class_names, loader, name_to_save):
     for batch_idx, (inputs, targets) in enumerate(loader):
         if torch.cuda.is_available():
             inputs, targets = inputs.cuda(), targets.cuda()
-            # inputs, targets = Variable(inputs, volatile=True), Variable(targets)
             outputs = net(inputs)
 
             _, predicted = torch.max(outputs.data, 1)
@@ -169,8 +167,6 @@ def make_prediction(net, class_names, loader, name_to_save):
               )
 
             acc = 100.*correct/total
-
-    print("Accuracy: ", acc.data.item())
 
     targets = get_pred_as_list(ground_truths)
     preds = get_pred_as_list(all_preds)

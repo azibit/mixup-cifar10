@@ -42,6 +42,8 @@ parser.add_argument('--dataset_dir', default='Data', type=str,
                     help='The location of the dataset to be explored')
 parser.add_argument('--trials', default=5, type=int,
                     help='Number of times to run the complete experiment')
+parser.add_argument('--baseline', default=False, type=Bool,
+                    help='To run a baseline experiment without using Mixup')
 args = parser.parse_args()
 
 use_cuda = torch.cuda.is_available()
@@ -120,17 +122,26 @@ def train(epoch):
         if use_cuda:
             inputs, targets = inputs.cuda(), targets.cuda()
 
-        inputs, targets_a, targets_b, lam = mixup_data(inputs, targets,
+        if not args.baseline:
+            inputs, targets_a, targets_b, lam = mixup_data(inputs, targets,
                                                        args.alpha, use_cuda)
-        # inputs, targets_a, targets_b = map(Variable, (inputs,
-                                                      # targets_a, targets_b))
+        # Make Prediction
         outputs = net(inputs)
-        loss = mixup_criterion(criterion, outputs, targets_a, targets_b, lam)
-        train_loss += loss.data.item()
-        _, predicted = torch.max(outputs.data, 1)
-        total += targets.size(0)
-        correct += (lam * predicted.eq(targets_a.data).cpu().sum().float()
-                    + (1 - lam) * predicted.eq(targets_b.data).cpu().sum().float())
+
+        if args.baseline:
+            loss = criterion(outputs, targets)
+            train_loss += loss.data.item()
+            _, predicted = torch.max(outputs.data, 1)
+            total += targets.size(0)
+            correct += predicted.eq(targets.data).cpu().sum()
+
+        else:
+            loss = mixup_criterion(criterion, outputs, targets_a, targets_b, lam)
+            train_loss += loss.data.item()
+            _, predicted = torch.max(outputs.data, 1)
+            total += targets.size(0)
+            correct += (lam * predicted.eq(targets_a.data).cpu().sum().float()
+                        + (1 - lam) * predicted.eq(targets_b.data).cpu().sum().float())
 
         optimizer.zero_grad()
         loss.backward()
@@ -152,7 +163,6 @@ def test(epoch):
     for batch_idx, (inputs, targets) in enumerate(testloader):
         if use_cuda:
             inputs, targets = inputs.cuda(), targets.cuda()
-        inputs, targets = Variable(inputs, volatile=True), Variable(targets)
         outputs = net(inputs)
         loss = criterion(outputs, targets)
 
