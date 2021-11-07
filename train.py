@@ -124,14 +124,12 @@ def train(epoch):
 
         print(args.baseline)
         if not args.baseline:
-            print("Not Baseline code 1")
             inputs, targets_a, targets_b, lam = mixup_data(inputs, targets,
                                                        args.alpha, use_cuda)
         # Make Prediction
         outputs = net(inputs)
 
         if args.baseline:
-            print("Baseline code")
             loss = criterion(outputs, targets)
             train_loss += loss.data.item()
             _, predicted = torch.max(outputs.data, 1)
@@ -139,7 +137,6 @@ def train(epoch):
             correct += predicted.eq(targets.data).cpu().sum()
 
         else:
-            print("Not Baseline code 2")
             loss = mixup_criterion(criterion, outputs, targets_a, targets_b, lam)
             train_loss += loss.data.item()
             _, predicted = torch.max(outputs.data, 1)
