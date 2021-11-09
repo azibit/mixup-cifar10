@@ -8,7 +8,7 @@ from __future__ import print_function
 
 import argparse
 import csv
-import os
+import os, sys
 
 import numpy as np
 import torch
@@ -44,6 +44,8 @@ parser.add_argument('--trials', default=5, type=int,
                     help='Number of times to run the complete experiment')
 parser.add_argument('--baseline', '-b', action='store_true',
                     help='To run a baseline experiment without using Mixup')
+parser.add_argument('--iterations', default=2, type=int,
+                    help='Number of times to run the complete experiment')
 args = parser.parse_args()
 
 use_cuda = torch.cuda.is_available()
@@ -51,8 +53,19 @@ use_cuda = torch.cuda.is_available()
 best_acc = 0  # best test accuracy
 start_epoch = 0  # start from epoch 0 or last checkpoint epoch
 
-if args.seed != 0:
-    torch.manual_seed(args.seed)
+torch.manual_seed(123)
+if torch.cuda.is_available():
+    torch.cuda.manual_seed(123)
+
+if not os.path.exists(args.dataset_dir):
+    file_utils.create_dir(args.dataset_dir)
+
+dataset_list = sorted(glob.glob(args.dataset_dir + "/*"))
+print("Dataset List: ", dataset_list)
+
+if len(dataset_list) == 0:
+    print("ERROR: 1. Add the Datasets to be run inside of the", args.dataset_dir, "folder")
+    sys.exit()
 
 # Data
 print('==> Preparing data..')
@@ -76,17 +89,6 @@ transform_test = transforms.Compose([
     transforms.ToTensor(),
     transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
 ])
-
-trainset = datasets.ImageFolder(os.path.join(args.dataset_dir, 'train'),
-                                          transform_train)
-trainloader = torch.utils.data.DataLoader(trainset,
-                                          batch_size=args.batch_size,
-                                          shuffle=True, num_workers=8)
-
-testset = datasets.ImageFolder(os.path.join(args.dataset_dir, 'test'),
-                                          transform_test)
-testloader = torch.utils.data.DataLoader(testset, batch_size=100,
-                                         shuffle=False, num_workers=8)
 
 
 def mixup_data(x, y, alpha=1.0, use_cuda=True):
@@ -155,13 +157,13 @@ def train(epoch):
     return (train_loss/batch_idx, reg_loss/batch_idx, 100.*correct/total)
 
 
-def test(epoch):
+def test(epoch, loader):
     global best_acc
     net.eval()
     test_loss = 0
     correct = 0
     total = 0
-    for batch_idx, (inputs, targets) in enumerate(testloader):
+    for batch_idx, (inputs, targets) in enumerate(loader):
         if use_cuda:
             inputs, targets = inputs.cuda(), targets.cuda()
         outputs = net(inputs)
@@ -210,66 +212,78 @@ def adjust_learning_rate(optimizer, epoch):
         param_group['lr'] = lr
 
 
-for trial in range(args.trials):
+for dataset in dataset_dir:
 
-    print("Conducting Experiment: ", str(trial))
+    # 1. Location to save the output for the given dataset
+    current_dataset_file = dataset.split("/")[-1] + '_.txt'
 
-    # Model
-    if args.resume:
-        # Load checkpoint.
-        print('==> Resuming from checkpoint..')
-        assert os.path.isdir('checkpoint'), 'Error: no checkpoint directory found!'
-        checkpoint = torch.load('./checkpoint/ckpt.t7' + args.name + '_'
-                                + str(args.seed))
-        net = checkpoint['net']
-        best_acc = checkpoint['acc']
-        start_epoch = checkpoint['epoch'] + 1
-        rng_state = checkpoint['rng_state']
-        torch.set_rng_state(rng_state)
-    else:
-        print('==> Building model..')
-        net = models.__dict__[args.model]()
+    for iteration in range(args.iterations):
+        for trial in range(args.trials):
 
-        ## Get the class names
-        class_names = trainset.classes
+            print("Iteration", iteration, " Experiment: ", trial, "for dataset", dataset)
 
-        ### Update the number of classes to predict
-        num_ftrs = net.linear.in_features
-        # Alternatively, it can be generalized to nn.Linear(num_ftrs, len(class_names)).
-        net.linear = nn.Linear(num_ftrs, len(class_names))
+            trainset = datasets.ImageFolder(os.path.join(dataset, 'train'),
+                                                      transform_train)
+            trainloader = torch.utils.data.DataLoader(trainset,
+                                                      batch_size=args.batch_size,
+                                                      shuffle=True, num_workers=8)
 
-    results = "results_" + str(trial)
-    if not os.path.isdir(results):
-        os.mkdir(results)
-    logname = (results + '/log_' + net.__class__.__name__ + '_' + args.name + '_'
-               + str(args.seed) + '.csv')
+            testset = datasets.ImageFolder(os.path.join(dataset, 'test'),
+                                                      transform_test)
+            testloader = torch.utils.data.DataLoader(testset, batch_size=100,
+                                                     shuffle=False, num_workers=8)
+
+            # Model
+            if args.resume:
+                # Load checkpoint.
+                print('==> Resuming from checkpoint..')
+                assert os.path.isdir('checkpoint'), 'Error: no checkpoint directory found!'
+                checkpoint = torch.load('./checkpoint/ckpt.t7' + args.name + '_'
+                                        + str(args.seed))
+                net = checkpoint['net']
+                best_acc = checkpoint['acc']
+                start_epoch = checkpoint['epoch'] + 1
+                rng_state = checkpoint['rng_state']
+                torch.set_rng_state(rng_state)
+            else:
+                print('==> Building model..')
+                net = models.__dict__[args.model](num_classes=len(class_names))
+
+            results = "results_" + str(trial)
+            if not os.path.isdir(results):
+                os.mkdir(results)
+            logname = (results + '/log_' + net.__class__.__name__ + '_' + args.name + '_'
+                       + str(args.seed) + '.csv')
 
 
-    if not os.path.exists(logname):
-        with open(logname, 'w') as logfile:
-            logwriter = csv.writer(logfile, delimiter=',')
-            logwriter.writerow(['epoch', 'train loss', 'reg loss', 'train acc',
-                                'test loss', 'test acc'])
+            if not os.path.exists(logname):
+                with open(logname, 'w') as logfile:
+                    logwriter = csv.writer(logfile, delimiter=',')
+                    logwriter.writerow(['epoch', 'train loss', 'reg loss', 'train acc',
+                                        'test loss', 'test acc'])
 
-    if use_cuda:
-        net.cuda()
-        net = torch.nn.DataParallel(net)
-        print(torch.cuda.device_count())
-        cudnn.benchmark = True
-        print('Using CUDA..')
+            if use_cuda:
+                net.cuda()
+                net = torch.nn.DataParallel(net)
+                print(torch.cuda.device_count())
+                cudnn.benchmark = True
+                print('Using CUDA..')
 
-    criterion = nn.CrossEntropyLoss()
-    optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9,
-                          weight_decay=args.decay)
+            criterion = nn.CrossEntropyLoss()
+            optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9,
+                                  weight_decay=args.decay)
 
-    for epoch in range(start_epoch, args.epoch):
-        train_loss, reg_loss, train_acc = train(epoch)
+            for epoch in range(start_epoch, args.epoch):
+                train_loss, reg_loss, train_acc = train(epoch)
+                test_loss, test_acc = test(epoch, testloader)
 
-        adjust_learning_rate(optimizer, epoch)
-        with open(logname, 'a') as logfile:
-            logwriter = csv.writer(logfile, delimiter=',')
-            logwriter.writerow([epoch, train_loss, reg_loss, train_acc])
+                adjust_learning_rate(optimizer, epoch)
+                with open(logname, 'a') as logfile:
+                    logwriter = csv.writer(logfile, delimiter=',')
+                    logwriter.writerow([epoch, train_loss, reg_loss, train_acc, test_loss,
+                                    test_acc])
 
-        if epoch + 1 == args.epoch:
-            print("Test result for experiment: ", trial)
-            make_prediction(net, testset.classes, testloader, 'save')
+                if epoch + 1 == args.epoch:
+                    with open(current_dataset_file, 'a') as f:
+                        print("Test result for iteration", iteration, "experiment:", trial, " for dataset ", dataset, file = f)
+                        print(make_prediction(net, testset.classes, testloader, 'save'), file = f)
