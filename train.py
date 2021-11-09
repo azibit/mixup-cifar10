@@ -127,7 +127,6 @@ def train(epoch):
         if use_cuda:
             inputs, targets = inputs.cuda(), targets.cuda()
 
-        print(args.baseline)
         if not args.baseline:
             inputs, targets_a, targets_b, lam = mixup_data(inputs, targets,
                                                        args.alpha, use_cuda)
