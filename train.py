@@ -215,7 +215,7 @@ def adjust_learning_rate(optimizer, epoch):
         param_group['lr'] = lr
 
 
-for dataset in dataset_dir:
+for dataset in dataset_list:
 
     # 1. Location to save the output for the given dataset
     current_dataset_file = dataset.split("/")[-1] + '_.txt'
