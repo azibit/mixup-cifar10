@@ -250,7 +250,7 @@ for dataset in dataset_list:
                 torch.set_rng_state(rng_state)
             else:
                 print('==> Building model..')
-                net = models.__dict__[args.model](num_classes=len(class_names))
+                net = models.__dict__[args.model](num_classes=len(testset.class_names))
 
             results = "results_" + str(trial)
             if not os.path.isdir(results):
