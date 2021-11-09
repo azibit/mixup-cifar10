@@ -5,13 +5,13 @@
 # This source code is licensed under the license found in the LICENSE file in
 # the root directory of this source tree.
 
-#train.py --lr=0.1 --seed=20170922 --decay=1e-4 --epoch=2 --trials=2 --dataset_dir=../Datasets -b for baseline
-#train.py --lr=0.1 --seed=20170922 --decay=1e-4 --epoch=2 --trials=2 --dataset_dir=../Datasets for mixup
+#train.py --lr=0.1 --seed=20170922 --decay=1e-4 --epoch=2 --trials=2 --dataset_dir=../Datasets --iterations 2 -b for baseline
+#train.py --lr=0.1 --seed=20170922 --decay=1e-4 --epoch=2 --trials=2 --dataset_dir=../Datasets --iterations 2 for mixup
 from __future__ import print_function
 
 import argparse
 import csv
-import os, sys
+import os, sys, glob
 
 import numpy as np
 import torch
