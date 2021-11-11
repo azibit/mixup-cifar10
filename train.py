@@ -287,5 +287,8 @@ for dataset in dataset_list:
 
                 if epoch + 1 == args.epoch:
                     with open(current_dataset_file, 'a') as f:
+                        checkpoint = torch.load('./checkpoint/ckpt.t7' + args.name + '_'
+                                                + str(args.seed))
+                        net = checkpoint['net']
                         print("Test result for iteration", iteration, "experiment:", trial, " for dataset ", dataset, file = f)
                         print(make_prediction(net, testset.classes, testloader, 'save'), file = f)
