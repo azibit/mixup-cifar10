@@ -49,6 +49,8 @@ parser.add_argument('--baseline', '-b', action='store_true',
                     help='To run a baseline experiment without using Mixup')
 parser.add_argument('--iterations', default=2, type=int,
                     help='Number of times to run the complete experiment')
+parser.add_argument('--image_size', default=32, type=int,
+                    help='input image size')
 args = parser.parse_args()
 
 use_cuda = torch.cuda.is_available()
@@ -74,7 +76,7 @@ if len(dataset_list) == 0:
 print('==> Preparing data..')
 if args.augment:
     transform_train = transforms.Compose([
-        transforms.RandomCrop(32, padding=4),
+        transforms.RandomCrop(args.image_size, padding=4),
         transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
         transforms.Normalize((0.4914, 0.4822, 0.4465),
@@ -249,7 +251,13 @@ for dataset in dataset_list:
                 torch.set_rng_state(rng_state)
             else:
                 print('==> Building model..')
-                net = models.__dict__[args.model](num_classes=len(testset.classes))
+
+
+                if args.image_size == 32:
+                    net = models.__dict__[args.model](num_classes=len(testset.classes))
+                else:
+                    net = models.densenet161()
+                    net.classifier = nn.Linear(net.classifier.in_features, len(testset.classes))
 
             results = "results_" + str(trial)
             if not os.path.isdir(results):
