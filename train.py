@@ -292,8 +292,8 @@ for dataset in dataset_list:
                 adjust_learning_rate(optimizer, epoch)
                 with open(logname, 'a') as logfile:
                     logwriter = csv.writer(logfile, delimiter=',')
-                    logwriter.writerow([epoch, train_loss, reg_loss, train_acc, test_loss,
-                                    test_acc])
+                    logwriter.writerow([epoch, train_loss, reg_loss, train_acc.data.item(), test_loss,
+                                    test_acc.data.item()])
 
                 if epoch + 1 == args.epoch:
                     with open(current_dataset_file, 'a') as f:
