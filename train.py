@@ -222,7 +222,7 @@ for dataset in dataset_list:
             print("Iteration", iteration, " Experiment: ", trial, "for dataset", dataset)
 
             # Location to save checkpoint
-            current_exp = "_ite_" + str(iteration) + "_" + str(trial) + "_dataset_" + dataset
+            current_exp = "_ite_" + str(iteration) + "_" + str(trial) + "_dataset_" + dataset.split("/")[-1]
             direct_for_checkpoint = 'checkpoint' + current_exp
 
             best_acc = 0  # best test accuracy
