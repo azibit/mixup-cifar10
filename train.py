@@ -261,7 +261,7 @@ for dataset in dataset_list:
                     net = model.densenet161()
                     net.classifier = nn.Linear(net.classifier.in_features, len(testset.classes))
 
-            results = "results_" + current_exp
+            results = "results_" + dataset.split("/")[-1]
             if not os.path.isdir(results):
                 os.mkdir(results)
             logname = (results + '/log_' + current_exp + '_' + net.__class__.__name__ + '_' + args.name + '_'
