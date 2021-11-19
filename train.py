@@ -6,7 +6,8 @@
 # the root directory of this source tree.
 
 #train.py --lr=0.1 --seed=20170922 --decay=1e-4 --epoch=2 --trials=2 --dataset_dir=../Datasets --iterations 2 -b for baseline
-#train.py --lr=0.1 --seed=20170922 --decay=1e-4 --epoch=2 --trials=2 --dataset_dir=../Datasets --iterations 2 --image_size 32 for mixup
+#train.py --lr=0.1 --seed=20170922 --decay=1e-4 --epoch=2 --trials=2 --dataset_dir=../Datasets --iterations 2 --image_size 32 for mixup version 1
+#train.py --lr=0.1 --seed=20170922 --decay=1e-4 --epoch=2 --trials=2 --dataset_dir=../Datasets --iterations 2 --image_size 32 -v2 for mixup version 2
 from __future__ import print_function
 
 import argparse, csv, os, sys, glob
@@ -50,6 +51,8 @@ parser.add_argument('--iterations', default=2, type=int,
                     help='Number of times to run the complete experiment')
 parser.add_argument('--image_size', default=32, type=int,
                     help='input image size')
+parser.add_argument('--mixup_v2', '-v2', action='store_true',
+                    help='Add a version of mixup that uses original dataset')
 args = parser.parse_args()
 
 use_cuda = torch.cuda.is_available()
@@ -107,8 +110,8 @@ def mixup_data(x, y, alpha=1.0, use_cuda=True):
     return mixed_x, y_a, y_b, lam
 
 # Idea is to include the original dataset while training with mixup so as to add more data to the training
-def mixup_criterion_v1(criterion, pred, y_a, y_b, lam, x, y):
-    return lam * criterion(pred, y_a) + (1 - lam) * criterion(pred, y_b) + criterion(x, y)
+def mixup_criterion_v1(criterion, pred, y_a, y_b, lam, pred1):
+    return lam * criterion(pred, y_a) + (1 - lam) * criterion(pred, y_b) + criterion(pred1, y_a)
 
 def mixup_criterion(criterion, pred, y_a, y_b, lam):
     return lam * criterion(pred, y_a) + (1 - lam) * criterion(pred, y_b)
@@ -125,6 +128,11 @@ def train(epoch):
             inputs, targets = inputs.cuda(), targets.cuda()
 
         if not args.baseline:
+
+            # Before transforming the data to mixup standard
+            if args.mixup_v2:
+                outputs1 = net(inputs)
+
             inputs, targets_a, targets_b, lam = mixup_data(inputs, targets,
                                                        args.alpha, use_cuda)
         # Make Prediction
@@ -137,6 +145,22 @@ def train(epoch):
             total += targets.size(0)
             correct += predicted.eq(targets.data).cpu().sum()
 
+        elif args.mixup_v2:
+            # outputs1 = net(inputs)
+            loss = mixup_criterion(criterion, outputs, targets_a, targets_b, lam) + criterion(outputs1, targets) # Add loss from predicting the original dataset
+            train_loss += loss.data.item()
+
+            # Predict for the mixup data samples
+            _, predicted = torch.max(outputs.data, 1)
+            total += targets.size(0)
+            correct += (lam * predicted.eq(targets_a.data).cpu().sum().float()
+                        + (1 - lam) * predicted.eq(targets_b.data).cpu().sum().float())
+
+            # Add correctly predicted values from the original dataset
+            _, predicted1 = torch.max(outputs1.data, 1)
+            total += targets.size(0)
+            correct += predicted1.eq(targets.data).cpu().sum()
+
         else:
             loss = mixup_criterion(criterion, outputs, targets_a, targets_b, lam)
             train_loss += loss.data.item()
@@ -144,6 +168,7 @@ def train(epoch):
             total += targets.size(0)
             correct += (lam * predicted.eq(targets_a.data).cpu().sum().float()
                         + (1 - lam) * predicted.eq(targets_b.data).cpu().sum().float())
+
 
         optimizer.zero_grad() # Zeroes out the gradients from previous passes if any
         loss.backward() # Computes the gradient values based on calculus
