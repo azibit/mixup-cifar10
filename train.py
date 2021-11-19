@@ -222,7 +222,7 @@ for dataset in dataset_list:
             print("Iteration", iteration, " Experiment: ", trial, "for dataset", dataset)
 
             # Location to save checkpoint
-            current_exp = "_ite_" + str(iteration) + "_" + str(trial) + "_dataset_" + dataset.split("/")[-1]
+            current_exp = "_ite_" + str(iteration) + "_trial_" + str(trial) + "_dataset_" + dataset.split("/")[-1]
             direct_for_checkpoint = 'checkpoint' + current_exp
 
             best_acc = 0  # best test accuracy
@@ -261,7 +261,7 @@ for dataset in dataset_list:
                     net = model.densenet161()
                     net.classifier = nn.Linear(net.classifier.in_features, len(testset.classes))
 
-            results = "results_" + str(trial)
+            results = "results_" + current_exp
             if not os.path.isdir(results):
                 os.mkdir(results)
             logname = (results + '/log_' + current_exp + '_' + net.__class__.__name__ + '_' + args.name + '_'
