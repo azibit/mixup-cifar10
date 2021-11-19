@@ -7,7 +7,7 @@
 
 #train.py --lr=0.1 --seed=20170922 --decay=1e-4 --epoch=2 --trials=2 --dataset_dir=../Datasets --iterations 2 -b for baseline
 #train.py --lr=0.1 --seed=20170922 --decay=1e-4 --epoch=2 --trials=2 --dataset_dir=../Datasets --iterations 2 --image_size 32 for mixup version 1
-#train.py --lr=0.1 --seed=20170922 --decay=1e-4 --epoch=2 --trials=2 --dataset_dir=../Datasets --iterations 2 --image_size 32 -v2 for mixup version 2
+#train.py --lr=0.1 --seed=20170922 --decay=1e-4 --epoch=2 --trials=2 --dataset_dir=../Datasets --iterations 2 --image_size 224 -v2 for mixup version 2
 from __future__ import print_function
 
 import argparse, csv, os, sys, glob
