@@ -222,8 +222,8 @@ for dataset in dataset_list:
             print("Iteration", iteration, " Experiment: ", trial, "for dataset", dataset)
 
             # Location to save checkpoint
-            current_exp = "_ite_" + str(iteration) + "_trial_" + str(trial) + "_dataset_" + dataset.split("/")[-1]
-            direct_for_checkpoint = 'checkpoint' + current_exp
+            current_exp = "_ite_" + str(iteration) + "_trial_" + str(trial) + "_dataset_" + dataset.split("/")[-1] + "_"
+            direct_for_checkpoint = 'checkpoint'
 
             best_acc = 0  # best test accuracy
             start_epoch = 0  # start from epoch 0 or last checkpoint epoch
@@ -244,7 +244,7 @@ for dataset in dataset_list:
                 # Load checkpoint.
                 print('==> Resuming from checkpoint..')
                 assert os.path.isdir(direct_for_checkpoint), 'Error: no checkpoint directory found!'
-                checkpoint = torch.load(f'./{direct_for_checkpoint}/ckpt.t7' + args.name + '_'
+                checkpoint = torch.load(f'./{direct_for_checkpoint}/ckpt.t7' + current_exp + args.name + '_'
                                         + str(args.seed))
                 net = checkpoint['net']
                 best_acc = checkpoint['acc']
@@ -297,7 +297,7 @@ for dataset in dataset_list:
 
                 if epoch + 1 == args.epoch:
                     with open(current_dataset_file, 'a') as f:
-                        checkpoint_result = torch.load(f'./{direct_for_checkpoint}/ckpt.t7' + args.name + '_'
+                        checkpoint_result = torch.load(f'./{direct_for_checkpoint}/ckpt.t7' + current_exp + args.name + '_'
                                                 + str(args.seed))
                         net = checkpoint_result['net']
                         print("Test result for iteration", iteration, "experiment:", trial, " for dataset ", dataset, file = f)
