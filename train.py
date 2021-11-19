@@ -302,3 +302,6 @@ for dataset in dataset_list:
                         net = checkpoint_result['net']
                         print("Test result for iteration", iteration, "experiment:", trial, " for dataset ", dataset, file = f)
                         print(make_prediction(net, testset.classes, testloader, 'save'), file = f)
+
+                        print("Train result for iteration", iteration, "experiment:", trial, "for dataset", dataset, file=f)
+                        print(make_prediction(net, testset.classes, trainloader, 'save'), file=f)
