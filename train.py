@@ -156,7 +156,7 @@ def train(epoch):
     return (train_loss/batch_idx, reg_loss/batch_idx, 100.*correct/total)
 
 
-def test(epoch, loader, direct_for_checkpoint):
+def test(epoch, loader, current_exp):
     global best_acc
     net.eval()
     test_loss = 0
@@ -179,13 +179,13 @@ def test(epoch, loader, direct_for_checkpoint):
                         correct, total))
     acc = 100.*correct/total
     if acc > best_acc:
-        checkpoint(acc, epoch, direct_for_checkpoint)
+        checkpoint(acc, epoch, current_exp)
         best_acc = acc
 
     return (test_loss/batch_idx, 100.*correct/total)
 
 
-def checkpoint(acc, epoch, direct_for_checkpoint):
+def checkpoint(acc, epoch, current_exp):
     # Save checkpoint.
     print('Saving..')
     state = {
@@ -196,7 +196,7 @@ def checkpoint(acc, epoch, direct_for_checkpoint):
     }
     if not os.path.isdir(direct_for_checkpoint):
         os.mkdir(direct_for_checkpoint)
-    torch.save(state, f'./{direct_for_checkpoint}/ckpt.t7' + args.name + '_'
+    torch.save(state, f'./{direct_for_checkpoint}/ckpt.t7' + current_exp + args.name + '_'
                + str(args.seed))
 
 
@@ -287,7 +287,7 @@ for dataset in dataset_list:
 
             for epoch in range(start_epoch, args.epoch):
                 train_loss, reg_loss, train_acc = train(epoch)
-                test_loss, test_acc = test(epoch, testloader, direct_for_checkpoint)
+                test_loss, test_acc = test(epoch, testloader, current_exp)
 
                 adjust_learning_rate(optimizer, epoch)
                 with open(logname, 'a') as logfile:
